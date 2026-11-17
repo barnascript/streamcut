@@ -1,0 +1,10 @@
+# Uploads and finished clips. The API and the workers both mount it.
+# On a real cluster this needs ReadWriteMany storage (EFS, Filestore...),
+# or better, object storage such as S3; see README "What I would do next".
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 20Gi } }

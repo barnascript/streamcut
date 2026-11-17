@@ -1,0 +1,45 @@
+# One ScyllaDB node in developer mode, good for a demo cluster.
+# For production I would use the Scylla Operator with 3 nodes and SCYLLA_RF=3.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: scylla
+spec:
+  serviceName: scylla
+  replicas: 1
+  selector: { matchLabels: { app: scylla } }
+  template:
+    metadata: { labels: { app: scylla } }
+    spec:
+      containers:
+        - name: scylla
+          image: scylladb/scylla:6.2
+          args: ["--smp", "1", "--memory", "750M", "--overprovisioned", "1", "--developer-mode", "1"]
+          ports:
+            - { containerPort: 9042, name: cql }
+            - { containerPort: 19042, name: cql-shard }
+          readinessProbe:
+            exec: { command: ["cqlsh", "-e", "SELECT now() FROM system.local"] }
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 8
+          resources:
+            requests: { cpu: 500m, memory: 1Gi }
+            limits: { memory: 1536Mi }
+          volumeMounts: [{ name: data, mountPath: /var/lib/scylla }]
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources: { requests: { storage: 5Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scylla
+spec:
+  clusterIP: None
+  selector: { app: scylla }
+  ports:
+    - { port: 9042, name: cql }
+    - { port: 19042, name: cql-shard }

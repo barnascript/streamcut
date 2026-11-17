@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Streamcut</title>
+  <meta name="description" content="Turn a long stream into short vertical clips with captions.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="#/">
+      <span class="mark" aria-hidden="true"></span>
+      <span>Streamcut</span>
+    </a>
+    <p class="tag">Long video in. Short clips out.</p>
+    <p class="queue" id="queue" aria-live="polite"></p>
+  </header>
+
+  <main id="app">
+    <section id="home" class="view">
+      <form id="new-job" class="panel" novalidate>
+        <h1>Make clips from a video</h1>
+        <p class="lead">Drop in a stream recording or paste a link. I find the moments worth sharing, cut them to 9:16 and add word-by-word captions.</p>
+
+        <label class="drop" id="drop">
+          <input type="file" id="file" accept="video/*,.mkv,.webm,.ogv">
+          <span class="drop-big" id="drop-text">Drop a video here, or click to choose</span>
+          <span class="drop-small">MP4, MOV, MKV, WebM. Up to 2 GB.</span>
+        </label>
+
+        <div class="or"><span>or paste a link</span></div>
+        <input type="url" id="url" class="text" placeholder="https://example.com/my-stream.mp4" autocomplete="off">
+
+        <fieldset class="settings">
+          <legend>Settings</legend>
+          <label>Clips
+            <input type="number" id="clips" min="1" max="10" value="5">
+          </label>
+          <label>Shortest (s)
+            <input type="number" id="minLen" min="5" max="90" value="20">
+          </label>
+          <label>Longest (s)
+            <input type="number" id="maxLen" min="10" max="180" value="60">
+          </label>
+          <div class="seg" role="radiogroup" aria-label="Layout">
+            <label><input type="radio" name="layout" value="blur" checked><span>Full frame</span></label>
+            <label><input type="radio" name="layout" value="crop"><span>Centre crop</span></label>
+          </div>
+          <label class="check"><input type="checkbox" id="captions" checked> Captions</label>
+        </fieldset>
+
+        <button type="submit" class="go" id="go">Find the clips</button>
+        <div class="upload" id="upload" hidden>
+          <div class="bar"><i id="upload-bar"></i></div>
+          <span id="upload-text"></span>
+        </div>
+        <p class="error" id="form-error" role="alert"></p>
+      </form>
+
+      <section class="panel recent">
+        <h2>Recent videos</h2>
+        <ul id="recent" class="jobs"><li class="muted">Loading…</li></ul>
+      </section>
+    </section>
+
+    <section id="job" class="view" hidden>
+      <a href="#/" class="back">← All videos</a>
+      <div class="panel job-head">
+        <div>
+          <h1 id="job-title">…</h1>
+          <p class="muted" id="job-meta"></p>
+        </div>
+        <button class="ghost" id="retry" hidden>Try again</button>
+      </div>
+
+      <div class="panel" id="progress-panel">
+        <ol class="steps" id="steps">
+          <li data-stage="download">Download</li>
+          <li data-stage="probe">Read</li>
+          <li data-stage="audio">Sound</li>
+          <li data-stage="transcribe">Words</li>
+          <li data-stage="analyse">Score</li>
+          <li data-stage="render">Cut</li>
+        </ol>
+        <div class="bar big"><i id="job-bar"></i></div>
+        <p id="job-message" class="muted" aria-live="polite"></p>
+      </div>
+
+      <div class="panel" id="chart-panel" hidden>
+        <div class="chart-head">
+          <h2>What happens when</h2>
+          <ul class="legend">
+            <li><i class="k-score"></i>Overall score</li>
+            <li><i class="k-loud"></i>Loudness</li>
+            <li><i class="k-hype"></i>Key words</li>
+            <li><i class="k-clip"></i>Picked clips</li>
+          </ul>
+        </div>
+        <div id="chart" class="chart"></div>
+      </div>
+
+      <div id="clip-list" class="clips"></div>
+    </section>
+  </main>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

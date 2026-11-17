@@ -1,0 +1,18 @@
+# Optional: scale workers on queue depth with KEDA (https://keda.sh).
+# Zero jobs waiting -> 1 worker. Each 2 waiting jobs -> one more, up to 10.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker
+  namespace: streamcut
+spec:
+  scaleTargetRef: { name: worker }
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  triggers:
+    - type: redis-streams
+      metadata:
+        address: redis.streamcut.svc.cluster.local:6379
+        stream: streamcut:jobs
+        consumerGroup: workers
+        lagCount: "2"

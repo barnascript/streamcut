@@ -1,0 +1,14 @@
+# For running the API and worker straight on your machine (faster on a Mac:
+# the worker can use the hardware video encoder) with only Redis and ScyllaDB
+# in Docker:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.hostdev.yml up -d redis scylla
+#
+# ScyllaDB normally tells clients its address inside the Docker network,
+# which your machine cannot reach. This makes it say 127.0.0.1 instead, and
+# also forwards the shard-aware port the Rust driver uses.
+services:
+  scylla:
+    command: ["--smp", "1", "--memory", "750M", "--overprovisioned", "1", "--developer-mode", "1",
+              "--api-address", "0.0.0.0", "--rpc-address", "0.0.0.0", "--broadcast-rpc-address", "127.0.0.1"]
+    ports: ["9042:9042", "19042:19042"]

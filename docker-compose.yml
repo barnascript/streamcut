@@ -1,0 +1,64 @@
+# Local stack: Redis (queue + live progress), ScyllaDB (jobs and clips),
+# the TypeScript API and the Rust worker.
+#
+#   docker compose up -d --build        whole stack on http://localhost:8080
+#   docker compose up -d redis scylla   just the data stores, run api/worker on the host
+#
+# Scale workers with: docker compose up -d --scale worker=3
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--save", ""]
+    ports: ["6379:6379"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      retries: 20
+
+  scylla:
+    image: scylladb/scylla:6.2
+    # One small node is enough on a laptop.
+    command: ["--smp", "1", "--memory", "750M", "--overprovisioned", "1", "--developer-mode", "1", "--api-address", "0.0.0.0"]
+    ports: ["9042:9042"]
+    volumes: [scylla-data:/var/lib/scylla]
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'SELECT now() FROM system.local' || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+      start_period: 20s
+
+  api:
+    build: { context: ., dockerfile: api/Dockerfile }
+    environment:
+      PORT: "8080"
+      REDIS_URL: redis://redis:6379
+      SCYLLA_NODES: scylla:9042
+      SCYLLA_RF: "1"
+      DATA_DIR: /data
+    ports: ["8080:8080"]
+    volumes: [media:/data]
+    depends_on:
+      redis: { condition: service_healthy }
+      scylla: { condition: service_healthy }
+
+  worker:
+    build: { context: ., dockerfile: worker/Dockerfile }
+    environment:
+      REDIS_URL: redis://redis:6379
+      SCYLLA_NODES: scylla:9042
+      DATA_DIR: /data
+      RENDER_SLOTS: "2"
+      WHISPER_THREADS: "4"
+    volumes: [media:/data]
+    depends_on:
+      api: { condition: service_started }
+    # On stop, the worker hands its current job back to the queue at once.
+    stop_grace_period: 30s
+
+volumes:
+  redis-data:
+  scylla-data:
+  media:

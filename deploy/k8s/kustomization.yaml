@@ -1,0 +1,13 @@
+# kubectl apply -k deploy/k8s
+# Runs everything in the "streamcut" namespace. keda-worker-scaler.yaml is
+# left out on purpose: apply it only if KEDA is installed in the cluster.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: streamcut
+resources:
+  - namespace.yaml
+  - redis.yaml
+  - scylla.yaml
+  - media.yaml
+  - api.yaml
+  - worker.yaml

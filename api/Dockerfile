@@ -1,0 +1,26 @@
+# Build from the repo root:  docker build -f api/Dockerfile .
+FROM node:22-alpine AS build
+WORKDIR /app/api
+COPY api/package.json api/package-lock.json ./
+RUN npm ci
+COPY api/tsconfig.json ./
+COPY api/src ./src
+RUN npm run build && npm prune --omit=dev
+
+FROM node:22-alpine
+ENV NODE_ENV=production \
+    DATA_DIR=/data \
+    WEB_DIR=/app/web \
+    SCHEMA_FILE=/app/db/schema.cql
+WORKDIR /app
+COPY --from=build /app/api/node_modules ./api/node_modules
+COPY --from=build /app/api/dist ./api/dist
+COPY api/package.json ./api/
+COPY web ./web
+COPY db ./db
+# The API and worker share /data, so both run as uid 1000.
+RUN mkdir -p /data && chown node:node /data
+USER node
+EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=3s CMD wget -qO- http://127.0.0.1:8080/healthz || exit 1
+CMD ["node", "api/dist/server.js"]

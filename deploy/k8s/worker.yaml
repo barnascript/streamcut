@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: worker } }
+  template:
+    metadata: { labels: { app: worker } }
+    spec:
+      securityContext: { runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      # On SIGTERM the worker stops its current job and puts it back on the
+      # queue at once, so another pod starts it. It needs only a few seconds.
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: worker
+          image: streamcut-worker:dev
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: REDIS_URL, value: "redis://redis:6379" }
+            - { name: SCYLLA_NODES, value: "scylla:9042" }
+            - name: WORKER_ID
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - { name: RENDER_SLOTS, value: "2" }
+            - { name: WHISPER_THREADS, value: "2" }
+          resources:
+            requests: { cpu: "1", memory: 1Gi }
+            limits: { memory: 3Gi }
+          volumeMounts: [{ name: media, mountPath: /data }]
+      volumes:
+        - name: media
+          persistentVolumeClaim: { claimName: media }
