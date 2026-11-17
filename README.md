@@ -21,7 +21,7 @@ I tested it on two NASA broadcasts, on a MacBook (M2 Pro):
 
 The SpaceX one is a good test because nothing loud happens: the rocket never leaves. The best moments are about what people say, so loudness alone would miss them.
 
-In Docker on Linux the worker uses the CPU encoder (libx264). On a Mac it can use the hardware encoder, which is why I also run it outside Docker there.
+In Docker the worker has no GPU and uses the CPU encoder (libx264). The same shuttle video took 51 s there instead of 20 s, almost all of it speech to text on 4 CPU threads. On a Mac the worker can use the hardware encoder and Metal, which is why I also run it outside Docker there.
 
 ## How it works
 
